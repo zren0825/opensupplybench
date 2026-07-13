@@ -214,6 +214,7 @@ def main():
                 {
                     "scenario_id": scenario.scenario_id,
                     "policy": pname,
+                    "sku_type": scenario.sku_type,
                     "demand_type": scenario.demand_type,
                     "lead_time_type": scenario.lead_time_type,
                     "budget_level": scenario.budget_level,

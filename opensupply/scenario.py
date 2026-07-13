@@ -12,12 +12,6 @@ from dataclasses import dataclass, asdict, field
 from typing import Optional
 import json
 
-# Discrete "levels" used when generating the benchmark grid (Phase 5). Keeping
-# them as named levels (rather than raw floats) makes scenario breakdown tables
-# in the paper readable.
-BUDGET_LEVELS = {"low": 200.0, "medium": 1000.0, "high": 5000.0}
-STOCKOUT_COST_LEVELS = {"low": 1.0, "medium": 4.0, "high": 12.0}
-
 
 @dataclass
 class Scenario:
@@ -35,12 +29,18 @@ class Scenario:
     imply a newsvendor service-level target over the review interval; see
     `implied_service_level()`. This makes the parameter choice interpretable
     rather than arbitrary.
+
+    In the benchmark, economics come from a fixed SKU archetype
+    (`opensupply.skus.SKU_ARCHETYPES`): holding scales with unit_cost, stockout is
+    tethered to unit margin, and budget is expressed in days of supply. The
+    dataclass defaults below are a single reasonable SKU for standalone use.
     """
 
     # Identity / reproducibility
     scenario_id: str = "unnamed"
     seed: int = 0
     horizon_days: int = 90
+    sku_type: str = "standard"      # SKU archetype (see opensupply.skus)
 
     # Demand + supply structure (see opensupply.demand / opensupply.leadtime)
     demand_type: str = "stable"
@@ -60,9 +60,13 @@ class Scenario:
 
     # Operational constraints
     budget_per_order: float = 1000.0   # max $ spend on a single order
+    days_of_supply: int = 10           # budget expressed as days of demand (context)
     moq: int = 0                       # minimum order quantity (0 = none)
     case_pack: int = 1                 # orders rounded up to a multiple of this
     initial_inventory: int = 20
+
+    # Interpretable regime tags for the scenario-breakdown analysis.
+    holding_level: str = "medium"
 
     def implied_service_level(self) -> float:
         """Newsvendor critical ratio over the review interval:

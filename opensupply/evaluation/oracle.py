@@ -74,4 +74,5 @@ def add_oracle_regret(rows: List[Dict], scenarios: Dict[str, Scenario],
         sid = r[group_key]
         if sid not in cache:
             cache[sid] = oracle_total_cost(scenarios[sid])
+        r["oracle_cost"] = round(cache[sid], 4)   # stored so normalization is exact
         r["regret"] = max(0.0, r["total_cost"] - cache[sid])

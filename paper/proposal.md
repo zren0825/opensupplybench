@@ -33,9 +33,13 @@ natural-language explanation of the decision.
 clairvoyant oracle, decision stability, and — for LLM methods — token cost and
 latency.
 
-**Benchmark:** Negative-Binomial count demand across 7 shapes × a dispersion
-knob × SKU scale; 3 lead-time regimes; 3 budget × 3 stockout-penalty levels ×
-seeds (≈7.5k reproducible scenarios). See `EVALUATION.md` for the design audit.
+**Benchmark:** a factorial of **6 interpretable SKU archetypes × 7 demand
+patterns × 3 lead-time regimes × seeds**. Archetypes (staple, perishable,
+premium, bulky, critical_import, impulse) span the holding-vs-stockout tradeoff
+(implied service levels ≈ 0.59–0.98), with holding scaled to unit cost, stockout
+tethered to margin, and days-of-supply budgets. Every SKU is run through every
+condition, so SKU type is a controlled factor. Single-SKU-per-scenario (no shared
+budget across SKUs — future work). See `EVALUATION.md` for the design audit.
 
 **Research questions for the experiments:**
 - RQ1: Does the hybrid agent reduce total cost vs. baselines?

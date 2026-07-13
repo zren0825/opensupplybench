@@ -73,10 +73,86 @@ Now four textbook-correct policies, each matched to the fixed-order-cost economi
   than claiming the synthetic generator is realistic.
 - **Oracle is heuristic**, not a provable lower bound. Reported as such.
 
+## v0.2.1 — the strong-baseline bar and honest aggregation
+
+Two further reviewer objections, addressed:
+
+**"Beating any one classical policy proves nothing."** Correct — and no single
+policy dominates: across the grid the per-scenario winner is `rule_based` ~33%,
+`forecast_safety` ~32%, `cost_min` ~27%, `periodic_review` ~7%. So the strong bar
+is the **Virtual Best Classical (VBC)** = the per-scenario *minimum* over all
+classical policies (`opensupply/evaluation/vbc.py`). The headline claim is
+whether the hybrid beats VBC — i.e. adds value *beyond* selecting/tuning the
+right classical policy. Keeping a diverse policy pool is deliberate: it makes VBC
+a *stronger* opponent, not a weaker one. A `TunedBaseStockPolicy` whose safety
+factor is fitted on a **train split and evaluated on held-out seeds**
+(`evaluation/tuning.py`, `experiments/tune_baselines.py`) joins the pool so the
+classical side is genuinely tuned, not a raw formula — the fit picks k≈1.28 over
+the textbook 1.645, so the tuned policy is measurably better and the "under-tuned
+baseline" critique is closed.
+
+**"How are scenarios weighted?"** v0.1 averaged *raw* cost with equal weight,
+which (a) let high-volume/high-penalty scenarios dominate the mean and (b)
+over-represented rare hard patterns. Fixed (`opensupply/evaluation/weighting.py`,
+`experiments/analyze_results.py`):
+- **Scale-normalized** metric — cost ÷ clairvoyant-oracle — so a $12k viral
+  scenario and a $500 stable one count comparably. This alone *changes the
+  ranking* (raw-cost favored `cost_min`; normalized favors `forecast_safety` /
+  `rule_based`, and exposes `cost_min` over-ordering on intermittent demand).
+- **Explicit weighting**, reported under both a **uniform** scheme and a
+  **documented prevalence prior** (common patterns weighted up, viral/new-product
+  down). If the hybrid wins under both, the claim is strong; if only under
+  uniform, that is honestly reported as "helps disproportionately on the rarer,
+  harder scenarios" (RQ2).
+
+## v0.3/v0.4 — SKU archetypes + economic-parameter fixes
+
+Three hyperparameter problems from the audit, fixed (`opensupply/skus.py`):
+
+- **`selling_price` was decorative; `stockout_cost` was untethered from margin.**
+  Now `stockout_cost = (selling_price − unit_cost) × stockout_multiple` — the lost
+  sale is priced off the actual unit margin (multiple > 1 = goodwill/substitution
+  on top). `selling_price` is used, not ornamental.
+- **The budget axis was confounded with SKU scale.** Verified: an absolute $200
+  cap bound only high-volume SKUs and was slack for the rest. Now
+  `budget_per_order = base_demand × unit_cost × days_of_supply`, so "low budget"
+  (few days of supply) means the same thing for every SKU.
+- **`cost_min` was under-powered.** Monte-Carlo raised 30→50 sims, and the
+  candidate range now keys off the *recent demand peak* (not the lagging mean),
+  so the optimizer can actually order enough during a spike.
+
+**(v0.4) A factorial of SKU archetypes × conditions.** The benchmark is no longer
+a single fixed cost profile, nor a cloud of one-off random SKUs. It is a **small
+set of fixed, interpretable SKU archetypes** — `staple`, `perishable`, `premium`,
+`bulky`, `critical_import`, `impulse` — each run through **every** demand pattern
+and lead-time regime ("season"):
+
+    SKU archetype × demand pattern × lead-time regime × seed
+
+The archetypes span the holding-vs-stockout tradeoff (implied service levels
+~0.59–0.98): `bulky`/`perishable` are holding-dominated (cheap to stock out, dear
+to hold), `premium`/`critical_import` are stockout-dominated. This makes **SKU
+type a controlled factor** — the analysis can report, per archetype, where each
+method wins (`analyze_results.py` prints the SKU breakdown) — which a single fixed
+SKU makes impossible, since you can't balance holding vs. stockout when they never
+vary. Economics stay honest: holding scales with unit cost, stockout is tethered
+to margin, budget is days-of-supply, and each SKU's implied critical ratio is its
+policies' cost-aware target (so classical baselines are specified per SKU, not
+fixed at 95%).
+
+This directly answers "cover different combinations of costs." It is still
+**single-SKU-per-scenario** replenishment (no shared budget across SKUs — the
+natural next paper), but the benchmark now spans a controlled, interpretable
+population of product types.
+
 ## Bottom line
 
-v0.1 was a runnable scaffold; v0.2 is defensible for a workshop / applied-AI
-submission: count-based demand with a dispersion axis, textbook baselines matched
-to the cost structure, interpretable economics with a stated service-level spread,
-and a fill-rate + clairvoyant-regret evaluation. The remaining limitations are
-scoping choices to declare, not holes to hide.
+v0.1 was a runnable scaffold; v0.4 is defensible for a workshop / applied
+submission: count-based demand with a dispersion axis; a **factorial of
+interpretable SKU archetypes × conditions** with margin-tethered stockout costs
+and scale-invariant budgets; a diverse, tuned classical pool whose **per-scenario
+best (VBC)** is the bar; and a **scale-normalized, explicitly-weighted**
+evaluation against a clairvoyant oracle, broken down by SKU type and demand
+pattern. The remaining limitations — single-SKU-per-scenario (no joint budget),
+lost-sales, synthetic demand, heuristic oracle — are scoping choices to declare,
+not holes to hide.

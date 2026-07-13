@@ -97,6 +97,7 @@ def _row(scenario, method, res, usage_summary=None):
     row = {
         "scenario_id": scenario.scenario_id,
         "policy": method,
+        "sku_type": scenario.sku_type,
         "demand_type": scenario.demand_type,
         "lead_time_type": scenario.lead_time_type,
         "budget_level": scenario.budget_level,

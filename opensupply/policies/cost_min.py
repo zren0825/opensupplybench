@@ -48,8 +48,8 @@ class CostMinimizationPolicy(Policy):
     def __init__(
         self,
         review_period: int = 7,
-        n_sims: int = 30,
-        n_candidates: int = 12,
+        n_sims: int = 50,
+        n_candidates: int = 16,
         seed: int = 12345,
     ):
         self.review_period = review_period
@@ -72,8 +72,12 @@ class CostMinimizationPolicy(Policy):
         horizon = L + obs.scenario.review_period
         samples = self._demand_samples(obs, horizon)
 
+        # Candidate range must cover spikes: use the *recent peak* demand, not
+        # just the mean, so the optimizer can order enough during a viral/promo
+        # surge (the mean lags badly there).
         mean_d = float(np.mean(samples))
-        q_max = int(max(1, mean_d) * horizon * 1.5)
+        peak_d = float(np.max(samples)) if samples.size else mean_d
+        q_max = int(max(1.0, max(mean_d * 2.0, peak_d)) * horizon)
         candidates = np.unique(
             np.linspace(0, q_max, self.n_candidates).round().astype(int)
         )
