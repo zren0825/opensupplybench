@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+data/scenarios/
+data/results*.csv
+paper/figures/*.png
+.ipynb_checkpoints/
+.DS_Store
+
+# local Claude Code settings (machine-specific, not for publishing)
+.claude/
+
+# unpublished paper materials (keep private until preprint)
+OpenSupplyBench_Paper_Plan.pdf
